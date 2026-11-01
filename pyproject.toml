@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kavach-eval"
+version = "0.1.0"
+description = "Safe-by-design red-team kit for prompt injection and data leaks in Indian languages"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Malaya Kumar Swain" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["llm-security", "prompt-injection", "red-teaming", "ai-safety", "indic", "hindi", "odia", "tamil", "hinglish", "guardrails", "evaluation"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Topic :: Security",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+kavach-eval = "kavach_eval.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Malaya-kumar-swain/kavach-eval"
+
+[tool.setuptools.packages.find]
+include = ["kavach_eval*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

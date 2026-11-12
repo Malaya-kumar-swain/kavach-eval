@@ -24,6 +24,7 @@ def main(argv=None) -> int:
     r.add_argument("--base-url", required=True)
     r.add_argument("--model", required=True)
     r.add_argument("--api-key-env", default="OPENAI_API_KEY")
+    r.add_argument("--delay", type=float, default=0.0, help="seconds to wait before each request, for rate limits")
     r.add_argument("--out", help="write <out>.md and <out>.json")
     r.add_argument("--fail-above", type=float, default=None,
                    help="exit 1 if overall attack success rate is above this (0-1), for CI gates")
@@ -37,12 +38,12 @@ def main(argv=None) -> int:
         for cls in DEMO_TARGETS.values():
             print(run(cls()).to_markdown(), end="\n\n")
         return 0
-    rep = run(OpenAICompatibleTarget(a.base_url, a.model, a.api_key_env))
+    rep = run(OpenAICompatibleTarget(a.base_url, a.model, a.api_key_env, delay=a.delay))
     print(rep.to_markdown())
     if a.out:
         open(a.out + ".md", "w", encoding="utf-8").write(rep.to_markdown())
         open(a.out + ".json", "w", encoding="utf-8").write(rep.to_json())
-    if a.fail_above is not None and rep.asr() > a.fail_above:
+    if a.fail_above is not None and (rep.errored or rep.asr() > a.fail_above):
         return 1
     return 0
 

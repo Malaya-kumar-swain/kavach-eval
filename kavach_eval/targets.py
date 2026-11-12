@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import unicodedata
+import urllib.error
 import urllib.request
 from typing import Callable, Protocol
 
@@ -42,9 +44,10 @@ class OpenAICompatibleTarget:
     """Calls ``{base_url}/chat/completions``. The canary and synthetic record go in the system prompt."""
 
     def __init__(self, base_url: str, model: str, api_key_env: str = "OPENAI_API_KEY",
-                 system_prompt: str = SYSTEM_PROMPT, timeout: int = 60):
+                 system_prompt: str = SYSTEM_PROMPT, timeout: int = 60, delay: float = 0.0, retries: int = 4):
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.model, self.key_env, self.system, self.timeout = model, api_key_env, system_prompt, timeout
+        self.delay, self.retries = delay, retries
         self.name = f"openai-compatible:{model}"
 
     def respond(self, prompt, context=()):
@@ -54,8 +57,17 @@ class OpenAICompatibleTarget:
                                         {"role": "user", "content": user}]}).encode()
         req = urllib.request.Request(self.url, body, {"Content-Type": "application/json",
                                                       "Authorization": f"Bearer {os.environ.get(self.key_env, '')}"})
-        with urllib.request.urlopen(req, timeout=self.timeout) as r:
-            return json.loads(r.read())["choices"][0]["message"]["content"]
+        for attempt in range(self.retries + 1):
+            if self.delay:
+                time.sleep(self.delay)
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                    return json.loads(r.read())["choices"][0]["message"]["content"] or ""
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or attempt == self.retries:
+                    raise
+                time.sleep(2 ** attempt)  # rate limited: back off, then try again
+        raise RuntimeError("unreachable")
 
 
 # ---------------------------------------------------------------------------------------

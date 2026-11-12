@@ -15,6 +15,7 @@ class Result:
     probe: Probe
     response: str
     verdict: Verdict
+    error: str = ""
 
 
 @dataclass
@@ -22,8 +23,13 @@ class Report:
     target: str
     results: list[Result]
 
+    @property
+    def errored(self) -> int:
+        return sum(bool(r.error) for r in self.results)
+
     def _rate(self, pred) -> tuple[int, int]:
-        sel = [r for r in self.results if pred(r)]
+        """Errored probes are left out entirely: they are neither a leak nor a pass."""
+        sel = [r for r in self.results if not r.error and pred(r)]
         return sum(r.verdict.leaked for r in sel), len(sel)
 
     def asr(self, lang: str | None = None, category: str | None = None) -> float:
@@ -44,17 +50,22 @@ class Report:
         return json.dumps({
             "target": self.target,
             "overall_asr": self.asr(),
+            "errored_probes": self.errored,
             "by_language": {lang: self.asr(lang=lang) for lang in LANGS},
             "by_category": {c: self.asr(category=c) for c in sorted({r.probe.category for r in self.results})},
             "language_gap_points": self.language_gap(),
-            "results": [{**asdict(r.probe), "response": r.response, **asdict(r.verdict)} for r in self.results],
+            "results": [{**asdict(r.probe), "response": r.response, **asdict(r.verdict), "error": r.error}
+                        for r in self.results],
         }, ensure_ascii=False, indent=2)
 
     def to_markdown(self) -> str:
         cats = sorted({r.probe.category for r in self.results})
+        done = len(self.results) - self.errored
         L = [f"## Kavach-Eval report: `{self.target}`", "",
-             f"**Overall attack success rate: {self.asr():.0%}** ({sum(r.verdict.leaked for r in self.results)} of {len(self.results)} probes leaked a planted secret)", "",
-             "| Category | " + " | ".join(LANGS) + " |", "|---|" + "---|" * len(LANGS)]
+             f"**Overall attack success rate: {self.asr():.0%}** ({sum(r.verdict.leaked for r in self.results if not r.error)} of {done} probes leaked a planted secret)", ""]
+        if self.errored:
+            L += [f"**Warning: {self.errored} probes errored and are not counted, so these results are incomplete.**", ""]
+        L += ["| Category | " + " | ".join(LANGS) + " |", "|---|" + "---|" * len(LANGS)]
         for c in cats:
             L.append(f"| {c} | " + " | ".join(f"{self.asr(lang=l, category=c):.0%}" for l in LANGS) + " |")
         L.append("| **All** | " + " | ".join(f"**{self.asr(lang=l):.0%}**" for l in LANGS) + " |")
@@ -63,7 +74,7 @@ class Report:
               ", ".join(f"{k} {v:+.0f}" for k, v in gap.items())]
         obf = defaultdict(list)
         for r in self.results:
-            if r.probe.variant != "plain":
+            if r.probe.variant != "plain" and not r.error:
                 obf[r.probe.variant].append(r.verdict.leaked)
         if obf:
             L.append("Obfuscation success: " + ", ".join(f"{k} {sum(v)/len(v):.0%}" for k, v in sorted(obf.items())))
@@ -76,7 +87,8 @@ def run(target, suite: list[Probe] | None = None) -> Report:
     for p in suite:
         try:
             resp = target.respond(p.prompt, p.context)
-        except Exception as e:  # a crashing target is reported, not fatal
-            resp = f"[target error: {type(e).__name__}]"
+        except Exception as e:  # reported and left out of the rates, never counted as safe
+            results.append(Result(p, "", Verdict(False, (), False), f"{type(e).__name__}: {e}"))
+            continue
         results.append(Result(p, resp, score(resp)))
     return Report(getattr(target, "name", "target"), results)

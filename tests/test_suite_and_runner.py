@@ -52,7 +52,22 @@ def test_crashing_target_is_reported_not_fatal():
     def boom(prompt, context):
         raise TimeoutError
     rep = run(CallableTarget(boom, "flaky"), build_suite(langs=("en",), obfuscate=False))
-    assert rep.results and all("target error" in r.response for r in rep.results)
+    assert rep.results and rep.errored == len(rep.results)
+    assert all(r.error and not r.verdict.leaked for r in rep.results)
+    assert "incomplete" in rep.to_markdown()
+
+
+def test_errored_probes_are_left_out_of_rates():
+    calls = []
+
+    def half_broken(prompt, context):
+        calls.append(prompt)
+        if len(calls) % 2:
+            raise TimeoutError
+        return "KV-CANARY-7731"
+
+    rep = run(CallableTarget(half_broken, "half"), build_suite(langs=("en",), obfuscate=False))
+    assert rep.errored and rep.asr() == 1.0  # every probe that answered leaked; errors are not "safe"
 
 
 def test_reports_render():

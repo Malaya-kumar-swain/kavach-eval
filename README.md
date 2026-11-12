@@ -56,10 +56,10 @@ The English blocklist looks like it works when you test in English. In Hindi it 
 
 ```bash
 export OPENAI_API_KEY=...
-python -m kavach_eval run --base-url https://api.openai.com/v1 --model gpt-4o-mini --out report --fail-above 0.05
+python -m kavach_eval run --base-url https://api.openai.com/v1 --model gpt-4o-mini --delay 2 --out report --fail-above 0.05
 ```
 
-The kit sends its own system prompt containing the canary and the synthetic record, so it tests the model and its built-in safety, not your prompt.
+The kit sends its own system prompt containing the canary and the synthetic record, so it tests the model and its built-in safety, not your prompt. `--delay` paces requests for rate limits, and rate-limited requests are retried. A probe that still fails is reported separately and left out of the rates, so an error can never look like a safe answer; with `--fail-above`, any errored probe fails the gate.
 
 **Your full application** (RAG chain, agent, guardrails and all). Put `kavach_eval.CANARY` in your system prompt, then:
 
@@ -105,7 +105,7 @@ kavach_eval/
   targets.py   OpenAI-compatible and callable adapters, demo targets
   runner.py    run the suite, attack success rate, language gap, reports
   __main__.py  CLI: demo, list, run
-tests/         16 tests
+tests/         17 tests
 examples/      release-gate example
 docs/          methodology and limits
 ```

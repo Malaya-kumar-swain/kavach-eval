@@ -56,6 +56,7 @@ class OpenAICompatibleTarget:
                            "messages": [{"role": "system", "content": self.system},
                                         {"role": "user", "content": user}]}).encode()
         req = urllib.request.Request(self.url, body, {"Content-Type": "application/json",
+                                                      "User-Agent": "kavach-eval/0.1",  # some gateways block Python's default agent
                                                       "Authorization": f"Bearer {os.environ.get(self.key_env, '')}"})
         for attempt in range(self.retries + 1):
             if self.delay:

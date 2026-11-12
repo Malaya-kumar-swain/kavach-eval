@@ -5,7 +5,7 @@
 *Kavach (कवच) means armour. Kavach-Eval tests whether yours holds up in Hindi, Hinglish, Odia and Tamil, not just in English.*
 
 [![ci](https://github.com/Malaya-kumar-swain/kavach-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/Malaya-kumar-swain/kavach-eval/actions)
-![python](https://img.shields.io/badge/python-3.10%2B-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![deps](https://img.shields.io/badge/core%20dependencies-0-brightgreen)
+[![PyPI](https://img.shields.io/pypi/v/kavach-eval)](https://pypi.org/project/kavach-eval/) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![deps](https://img.shields.io/badge/core%20dependencies-0-brightgreen)
 
 ---
 
@@ -32,9 +32,11 @@ Kavach-Eval measures that gap in a few seconds and turns it into a number you ca
 ## 30-second demo (no model or API key needed)
 
 ```bash
-pip install -e .
+pip install kavach-eval
 python -m kavach_eval demo
 ```
+
+From source: `git clone https://github.com/Malaya-kumar-swain/kavach-eval && cd kavach-eval && pip install -e .`
 
 The demo runs the 60-probe suite against three built-in stand-ins: a model with no guardrails, the same model behind an **English keyword blocklist**, and the same model behind a **layered guard** (input normalisation, multilingual intent check, output filter).
 
@@ -74,7 +76,7 @@ print(report.to_markdown())
 print(report.language_gap())                # {'hi': 41.7, 'hinglish': 8.3, 'or': 50.0, 'ta': 33.3} for example
 ```
 
-See [`examples/guard_your_app.py`](examples/guard_your_app.py) for a release gate that fails when the worst language goes above 5%.
+See [`examples/guard_your_app.py`](https://github.com/Malaya-kumar-swain/kavach-eval/blob/main/examples/guard_your_app.py) for a release gate that fails when the worst language goes above 5%.
 
 ## Safe by design
 
@@ -84,7 +86,7 @@ A red-team kit should not become an attack kit. Kavach-Eval:
 - **contains no jailbreak payloads for harmful content.** It tests whether instructions and secrets stay where they belong, which is the risk regulators and CISOs ask about.
 - **is meant for systems you own or are authorised to test.**
 
-Details in [`docs/methodology.md`](docs/methodology.md).
+Details in [`docs/methodology.md`](https://github.com/Malaya-kumar-swain/kavach-eval/blob/main/docs/methodology.md).
 
 ## How it fits
 
